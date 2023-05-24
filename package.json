@@ -1,0 +1,23 @@
+{
+  "name": "@peter.naydenov/dt-history",
+  "version": "0.0.1",
+  "description": "History managment system",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PeterNaydenov/dt-history.git"
+  },
+  "keywords": [
+    "history"
+  ],
+  "author": "Peter Naydenov",
+  "license": "MIT",
+  "homepage": "https://github.com/PeterNaydenov/dt-history#readme",
+  "bugs": {
+            "url": "https://github.com/PeterNaydenov/dt-history/issues"
+        }
+}
