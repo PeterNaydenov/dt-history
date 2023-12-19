@@ -1,5 +1,5 @@
 # DT History (@peter.naydenov/dt-history)
-*UNDER HEAVY DEVELOPMENT*
+*UNDER HEAVY DEVELOPMENT - early specification stage*
 
 
 
@@ -22,9 +22,12 @@ State-history manager for javascript based on DT-model. Self sufficient.
 
 ## Methods
 
+History manager has own current marker. Execution of any method will keep current marker updated. There is no direct use of current marker. It's used only for internal purposes.
+
 ```js
   // I/O Operations
   save    : 'Add a new history step. Returns a history name.'
+  forget  : 'Remove steps that are after current marker'
 
 // Get a history object
 , get     : 'Get a history object with specific name'
@@ -32,8 +35,8 @@ State-history manager for javascript based on DT-model. Self sufficient.
 , trace   : 'Create a historical list for specified dt-line, dt-line/key'
 
 // Move current marker 
-, back    : 'Return the last saved state'
-, go      : 'Move current marker forward/backword'
+, latest  : 'Return the last saved state'
+, go      : 'Move current marker forward/backword. Sign minus in front of the step number means backword'
 ```
 
 Library has own current marker but library works fine without using it.
@@ -44,11 +47,11 @@ State history make sense only when all state related data goes together. That's 
 
 Possible 'where' condition descriptors. Descriptiors are not required:
 - location    : History object has location(dt-line breadcrumbs);
-- notLocation : History object doesn't have specified location;
+- !location : History object doesn't have specified location;
 - key         : Search for key;
-- notKey      : Ignore history object if key exists;
+- !key      : Ignore history object if key exists;
 - value       : Search for specified value
-- notValue    : Expect value to be different of specified;
+- !value    : Expect value to be different of specified;
 
 If `location` is not set: Will test all DT-lines for other descriptors;
 If `notLocation` is set: Will search all DT-lines if history object don't have line with such location(breadcrumbs);
@@ -73,7 +76,8 @@ IDEAS:
 // Samples:
 
 let history = new dtHistory ({ // set history params
-                            limit: 10  // how many history-objects can collect current store. Default: no limit
+                              limit: 10           // how many history-objects can collect current store. Default: no limit
+                            , hasCurrent : true   // Use current marker. By default 'current' is off.
                         })
 
 // Save a new history-object. Can contain many variables because is a DT-model.
@@ -105,12 +109,12 @@ history.where ([
 
 // Search for history object, where key is 'name' and object doesn't have key 'age',  value of 'key' is different of 'Ivan'
 history.where ([
-            { key: 'name', notValue: 'Ivan', notKey: 'age' }
+            { key: 'name', !value: 'Ivan', !key: 'age' }
         ])
 
 // the same 'where' request but different 
 history.where ([
-              { key: 'name', notValue: 'Ivan' }
+              { key: 'name', !value: 'Ivan' }
             , { notKey: 'age' }
         ])
 
@@ -123,15 +127,16 @@ history.where ([
 history.where ( ({ 
                 dt,        // the history-object as a dt-object
                 select,    // a function to set current history-object as selected
+                buffer     // object that can be accessed from all callbacks
                 finish,     // a function to set current history-object as selected and finish with searching
                 end        // boolean flag. Set to true if all history-objects are checked.
                 }) => {
                         dt.query ( store => {
-                                        store.look ( ({name, flatData}) => {
+                                        store.look ( ({ name, flatData, NEXT }) => {
                                                     if ( name === 'user' ) {
                                                             if ( flatData.toHaveOwnProperty ( 'age' ) )   select()
                                                         }
-                                                    return 'next'
+                                                    return NEXT
                                             })
                                         if ( end )   select ()
                                 })
@@ -143,7 +148,8 @@ history.where ( ({
 function scanFn ({ // possible named arguments:
                   counter     // steps counter for 
                 , response    // dt-store to collect a requested data
-                , buffer      // object that can be accessed from all 
+                , buffer      // object that can be accessed from all
+                , finish       // a function to stop the scan if you are ready with the report
                 , dt          // the history-object as a dt-object
                 , end        // when all dt-lines of all history-objects objects were scaned. Last execution of the function
     }) {
@@ -161,19 +167,21 @@ function scanFn ({ // possible named arguments:
                 }
             
 } // scanFn func.
-history.report( scanFn ).model ( store => ({as:'std'})   )
+history
+  .report( scanFn ) // report returns a dt-object
+  .model ( store => ({as:'std'})   )
 
 
 
 
 
 // Trace history for specific dt-line/key
-history.trace ({ location: 'root', key: 'name' })  // Will search for history of top level property 'name'. 
+history.trace ({ location: 'profile', key: 'name' })  // Will search for history of top level property 'name'. 
 // Response is aray of values like: [ 'Ivan', 'Stefan', null, 'Petko']
 // Where first value is the newest one. Value null mean that the key was not set in some of the history objects
 
 // Trace for dt-line
-history.trace ({location:'root/user'})
+history.trace ({location:'user'})
 // Will return array of flatData of specified dt-line location(breadcrumbs).
 // Example: [ {name:'Ivan'}, {name:'Stefan'}, {}, {name:'Petko'}]
 
@@ -181,25 +189,4 @@ history.trace ({location:'root/user'})
 
 
 
-
-
-
-// Posssible solution
-history.scan ([
-    {
-        diraction: 'backwords'
-        , fn : ({
-                  counter // steps counter
-                , storage  //
-                , name
-                , flatData
-                , breadcrumbs
-                , edges
-
-
-                }) => {
-
-                }
-    }
-])
 ```
